@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🔧 ระบบแจ้งซ่อม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #0F6E56; --teal-mid: #1D9E75; --teal-light: #E1F5EE; --teal-pale: #F0FAF6;
+  --amber: #854F0B; --amber-mid: #BA7517; --amber-light: #FAEEDA;
+  --red: #A32D2D; --red-light: #FCEBEB;
+  --blue: #185FA5; --blue-light: #E6F1FB;
+  --green: #3B6D11; --green-light: #EAF3DE;
+  --gray: #5F5E5A; --gray-light: #F1EFE8; --gray-pale: #F9F8F5;
+  --text: #2C2C2A; --text-muted: #888780; --text-light: #B4B2A9;
+  --border: #D3D1C7; --border-light: #E8E6DF;
+  --white: #FFFFFF; --bg: #F4F2EC;
+  --r: 12px; --r-sm: 8px; --r-lg: 16px; --r-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 2px 8px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.05);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+
+/* ── Nav ── */
+nav {
+  background: var(--teal);
+  padding: 0;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(15,110,86,.3);
+}
+.nav-inner { max-width: 900px; margin: 0 auto; padding: 0 16px; display: flex; align-items: stretch; gap: 0; }
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 0; margin-right: 16px;
+  color: rgba(255,255,255,.95); font-size: 15px; font-weight: 700;
+  white-space: nowrap; flex-shrink: 0;
+}
+.nav-brand .icon { font-size: 20px; }
+.nav-tabs { display: flex; gap: 0; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab {
+  padding: 16px 14px; font-size: 13px; font-weight: 500;
+  cursor: pointer; color: rgba(255,255,255,.65);
+  border-bottom: 3px solid transparent;
+  transition: all .15s; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-tab:hover { color: rgba(255,255,255,.9); }
+.nav-tab.active { color: #fff; border-bottom-color: rgba(255,255,255,.9); }
+.nav-tab .tab-icon { font-size: 15px; }
+
+/* ── Page layout ── */
+.page { display: none; }
+.page.active { display: block; }
+.page-inner { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
+
+/* ── Section headers ── */
+.page-header { margin-bottom: 20px; }
+.page-header h2 { font-size: 20px; font-weight: 700; color: var(--text); }
+.page-header p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+/* ── Cards ── */
+.card { background: var(--white); border: 1px solid var(--border-light); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); margin-bottom: 16px; overflow: hidden; }
+.card-header { padding: 18px 20px 0; display: flex; align-items: center; gap: 10px; }
+.card-header-icon { width: 36px; height: 36px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.card-header-icon.teal { background: var(--teal-light); }
+.card-header-icon.amber { background: var(--amber-light); }
+.card-header-icon.blue { background: var(--blue-light); }
+.card-header h3 { font-size: 15px; font-weight: 600; }
+.card-body { padding: 18px 20px 20px; }
+
+/* ── Form elements ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: .2px; }
+.field label .req { color: var(--red); margin-left: 2px; }
+input[type=text], input[type=datetime-local], select, textarea {
+  width: 100%; border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  padding: 10px 13px; font-size: 14px; font-family: 'Sarabun', sans-serif;
+  color: var(--text); background: var(--white); transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none; appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--teal-mid);
+  box-shadow: 0 0 0 3px rgba(29,158,117,.12);
+}
+textarea { resize: vertical; min-height: 88px; line-height: 1.6; }
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+/* ── Type selector ── */
+.type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+@media(max-width: 420px) { .type-grid { grid-template-columns: 1fr; } }
+.type-card {
+  border: 2px solid var(--border); border-radius: var(--r);
+  padding: 14px 12px; cursor: pointer; text-align: center;
+  transition: all .15s; background: var(--white);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.type-card:hover { border-color: var(--teal-mid); transform: translateY(-1px); box-shadow: var(--shadow); }
+.type-card.selected.repair { border-color: #E24B4A; background: var(--red-light); }
+.type-card.selected.adjust { border-color: #BA7517; background: var(--amber-light); }
+.type-card.selected.pm { border-color: #185FA5; background: var(--blue-light); }
+.type-card .type-icon { font-size: 24px; }
+.type-card .type-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.type-card .type-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+/* ── Priority selector ── */
+.prio-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+@media(max-width: 480px) { .prio-grid { grid-template-columns: repeat(2,1fr); } }
+.prio-card {
+  border: 2px solid var(--border); border-radius: var(--r-sm);
+  padding: 10px 8px; cursor: pointer; text-align: center;
+  transition: all .15s; background: var(--white);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.prio-card:hover { border-color: var(--teal-mid); }
+.prio-card .prio-icon { font-size: 18px; }
+.prio-card .prio-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.prio-card .prio-sub { font-size: 10px; color: var(--text-muted); line-height: 1.3; text-align: center; }
+.prio-card.selected[data-val=urgent] { border-color: #E24B4A; background: var(--red-light); }
+.prio-card.selected[data-val=high] { border-color: #BA7517; background: var(--amber-light); }
+.prio-card.selected[data-val=normal] { border-color: #1D9E75; background: var(--teal-light); }
+.prio-card.selected[data-val=low] { border-color: #888780; background: var(--gray-light); }
+
+/* ── Image upload ── */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--r);
+  padding: 24px; text-align: center; cursor: pointer;
+  transition: all .15s; background: var(--gray-pale);
+  position: relative;
+}
+.upload-zone:hover { border-color: var(--teal-mid); background: var(--teal-pale); }
+.upload-zone input { display: none; }
+.upload-zone .uz-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+.upload-zone p { font-size: 13px; color: var(--text-muted); }
+.upload-zone strong { color: var(--teal); }
+.preview-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.preview-item { position: relative; }
+.preview-item img { width: 80px; height: 80px; object-fit: cover; border-radius: var(--r-sm); border: 1.5px solid var(--border); display: block; }
+.preview-item .del { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: var(--red); color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 700; border: 2px solid white; }
+
+/* ── Buttons ── */
+.btn { padding: 11px 24px; border-radius: var(--r-sm); font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; font-family: 'Sarabun', sans-serif; display: inline-flex; align-items: center; gap: 7px; }
+.btn-primary { background: var(--teal); color: #fff; box-shadow: 0 2px 8px rgba(15,110,86,.25); }
+.btn-primary:hover { background: var(--teal-mid); box-shadow: 0 4px 12px rgba(15,110,86,.3); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-outline { background: var(--white); color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--teal-mid); color: var(--teal); }
+.btn-danger { background: var(--white); color: var(--red); border: 1.5px solid var(--red-light); }
+.btn-row { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; }
+
+/* ── Stats grid ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+@media(max-width: 560px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+.stat-card { background: var(--white); border: 1px solid var(--border-light); border-radius: var(--r); padding: 18px 16px; box-shadow: var(--shadow-sm); text-align: center; transition: box-shadow .15s; }
+.stat-card:hover { box-shadow: var(--shadow); }
+.stat-num { font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.stat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+/* ── Table ── */
+.table-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.table-bar select, .table-bar input { width: auto; font-size: 13px; padding: 8px 12px; }
+.table-bar input { flex: 1; min-width: 160px; }
+.count-pill { background: var(--gray-light); color: var(--gray); padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: auto; white-space: nowrap; }
+.tbl-wrap { overflow-x: auto; border-radius: var(--r-sm); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { padding: 10px 14px; background: var(--gray-pale); font-weight: 600; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border-light); }
+td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--gray-pale); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-repair { background: var(--red-light); color: var(--red); }
+.badge-adjust { background: var(--amber-light); color: var(--amber); }
+.badge-pm { background: var(--blue-light); color: var(--blue); }
+.badge-open { background: var(--amber-light); color: var(--amber-mid); }
+.badge-progress { background: var(--blue-light); color: var(--blue); }
+.badge-done { background: var(--green-light); color: var(--green); }
+.badge-urgent { background: var(--red-light); color: var(--red); }
+.badge-high { background: var(--amber-light); color: var(--amber); }
+.badge-normal { background: var(--teal-light); color: var(--teal); }
+.badge-low { background: var(--gray-light); color: var(--gray); }
+.machine-col { font-weight: 600; color: var(--text); }
+.dt-col { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.view-btn { padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--teal-light); color: var(--teal); border: 1px solid rgba(15,110,86,.2); transition: all .15s; font-family: 'Sarabun',sans-serif; }
+.view-btn:hover { background: var(--teal); color: white; }
+.empty-state { text-align: center; padding: 48px 20px; }
+.empty-state .es-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: var(--text-muted); font-size: 14px; }
+
+/* ── Modal ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(20,20,18,.5); z-index: 300; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px); }
+.modal-bg.open { display: flex; }
+.modal-box { background: var(--white); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.modal-top { padding: 20px 20px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.modal-top-left h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.modal-close-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--gray-light); border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s; }
+.modal-close-btn:hover { background: var(--border); }
+.modal-body { padding: 16px 20px; }
+.detail-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+.detail-item:last-child { border-bottom: none; }
+.detail-lbl { font-size: 12px; color: var(--text-muted); font-weight: 600; min-width: 100px; padding-top: 1px; text-transform: uppercase; letter-spacing: .3px; }
+.detail-val { font-size: 14px; color: var(--text); flex: 1; line-height: 1.6; }
+.modal-imgs { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 20px 16px; }
+.modal-imgs img { width: 90px; height: 90px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--border); cursor: zoom-in; transition: transform .15s; }
+.modal-imgs img:hover { transform: scale(1.04); }
+.modal-footer { padding: 16px 20px; border-top: 1px solid var(--border-light); display: flex; align-items: center; gap: 12px; background: var(--gray-pale); border-radius: 0 0 var(--r-xl) var(--r-xl); }
+.modal-footer label { font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.status-sel { border: 1.5px solid var(--border); border-radius: var(--r-sm); padding: 7px 12px; font-size: 13px; font-family: 'Sarabun',sans-serif; flex: 1; cursor: pointer; }
+.status-sel:focus { outline: none; border-color: var(--teal-mid); }
+
+/* ── Settings ── */
+.settings-section { margin-bottom: 8px; }
+.step-list { display: flex; flex-direction: column; gap: 12px; }
+.step-item { display: flex; gap: 14px; }
+.step-num-circle { width: 28px; height: 28px; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.step-num-circle.teal { background: var(--teal-light); color: var(--teal); }
+.step-num-circle.amber { background: var(--amber-light); color: var(--amber); }
+.step-num-circle.blue { background: var(--blue-light); color: var(--blue); }
+.step-content .step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.step-content .step-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+.step-content .step-desc b { color: var(--text); font-weight: 600; }
+.code-block { background: #1e1e2e; color: #cdd6f4; border-radius: var(--r-sm); padding: 14px 16px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.7; margin-top: 10px; overflow-x: auto; white-space: pre; }
+.input-row { display: flex; gap: 8px; margin-top: 10px; }
+.input-row input { flex: 1; }
+.tip { background: var(--teal-light); border-radius: var(--r-sm); padding: 10px 14px; font-size: 13px; color: #085041; margin-top: 8px; line-height: 1.6; }
+.warn { background: var(--amber-light); border-radius: var(--r-sm); padding: 10px 14px; font-size: 13px; color: #633806; margin-top: 8px; line-height: 1.6; }
+.saved-msg { font-size: 13px; color: var(--teal); margin-top: 6px; display: none; font-weight: 500; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #1e2420; color: #fff; padding: 12px 20px 12px 16px;
+  border-radius: 30px; font-size: 14px; font-weight: 500;
+  display: none; z-index: 999; box-shadow: var(--shadow-lg);
+  white-space: nowrap; max-width: 90vw;
+  animation: none; gap: 8px; align-items: center;
+  border: 1px solid rgba(255,255,255,.1);
+}
+#toast.show { display: flex; }
+#toast.err { background: #3a1212; }
+#toast .t-icon { font-size: 16px; }
+
+/* ── Divider ── */
+.divider { height: 1px; background: var(--border-light); margin: 20px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+.mc-row { display:flex; align-items:center; gap:10px; background:var(--gray-pale); border:1px solid var(--border-light); border-radius:var(--r-sm); padding:9px 12px; font-size:13px; }
+.mc-row .mc-code { font-family: monospace; font-size:12px; color:var(--teal); background:var(--teal-light); padding:2px 8px; border-radius:4px; font-weight:600; flex-shrink:0; }
+.mc-row .mc-label { flex:1; color:var(--text); font-weight:500; }
+.mc-row .mc-line { font-size:11px; color:var(--text-muted); background:var(--gray-light); padding:2px 8px; border-radius:10px; flex-shrink:0; }
+.mc-row .mc-del { background:none; border:none; cursor:pointer; color:var(--text-light); font-size:16px; padding:0 2px; line-height:1; flex-shrink:0; transition:color .15s; }
+.mc-row .mc-del:hover { color:var(--red); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <span class="icon">🔧</span>
+      <span>ระบบแจ้งซ่อม</span>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="showPage('form',this)">
+        <span class="tab-icon">📝</span> แจ้งงาน
+      </div>
+      <div class="nav-tab" onclick="showPage('dash',this)">
+        <span class="tab-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-tab" onclick="showPage('settings',this)">
+        <span class="tab-icon">⚙️</span> ตั้งค่า
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════ FORM PAGE ══════════ -->
+<div id="page-form" class="page active">
+  <div class="page-inner">
+
+    <div class="page-header">
+      <h2>แบบฟอร์มแจ้งงาน</h2>
+      <p>กรอกข้อมูลให้ครบ แล้วกดบันทึก — ระบบจะแจ้งเตือน Slack ทันที</p>
+    </div>
+
+    <!-- ประเภทงาน -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon teal">🏷️</div>
+        <h3>เลือกประเภทงาน</h3>
+      </div>
+      <div class="card-body">
+        <div class="type-grid" id="type-grid">
+          <div class="type-card repair" onclick="selectType('repair',this)">
+            <span class="type-icon">🔴</span>
+            <span class="type-name">แจ้งซ่อม</span>
+            <span class="type-desc">เครื่องเสีย หยุดงาน</span>
+          </div>
+          <div class="type-card adjust" onclick="selectType('adjust',this)">
+            <span class="type-icon">🟡</span>
+            <span class="type-name">ปรับตั้ง</span>
+            <span class="type-desc">ปรับค่า ตั้งเครื่องใหม่</span>
+          </div>
+          <div class="type-card pm" onclick="selectType('pm',this)">
+            <span class="type-icon">🔵</span>
+            <span class="type-name">PM บำรุงรักษา</span>
+            <span class="type-desc">ตรวจสอบตามกำหนด</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ความเร่งด่วน -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon amber">⚡</div>
+        <h3>ระดับความเร่งด่วน</h3>
+      </div>
+      <div class="card-body">
+        <div class="prio-grid">
+          <div class="prio-card" data-val="urgent" onclick="selectPrio(this)">
+            <span class="prio-icon">🚨</span>
+            <span class="prio-name">เร่งด่วนมาก</span>
+            <span class="prio-sub">หยุดสายการผลิต</span>
+          </div>
+          <div class="prio-card" data-val="high" onclick="selectPrio(this)">
+            <span class="prio-icon">⚡</span>
+            <span class="prio-name">สูง</span>
+            <span class="prio-sub">กระทบคุณภาพ</span>
+          </div>
+          <div class="prio-card" data-val="normal" onclick="selectPrio(this)">
+            <span class="prio-icon">🟢</span>
+            <span class="prio-name">ปกติ</span>
+            <span class="prio-sub">ซ่อมได้ตามปกติ</span>
+          </div>
+          <div class="prio-card" data-val="low" onclick="selectPrio(this)">
+            <span class="prio-icon">⬇️</span>
+            <span class="prio-name">ต่ำ</span>
+            <span class="prio-sub">ไม่เร่ง ซ่อมทีหลัง</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ข้อมูลหลัก -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon teal">📋</div>
+        <h3>ข้อมูลการแจ้ง</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>ชื่อผู้แจ้ง <span class="req">*</span></label>
+            <input type="text" id="f-name" placeholder="เช่น นายสมชาย ใจดี">
+          </div>
+          <div class="field">
+            <label>แผนก / สายการผลิต <span class="req">*</span></label>
+            <select id="f-dept">
+              <option value="">— เลือกแผนก —</option>
+              <option>แผนกตัดไม้</option>
+              <option>แผนกติดขอบ</option>
+              <option>แผนกเจาะ</option>
+              <option>แผนกประกอบ</option>
+              <option>แผนกขึ้นรูป</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>เครื่องจักร <span class="req">*</span></label>
+            <select id="f-machine"></select>
+          </div>
+          <div class="field">
+            <label>วันที่และเวลา</label>
+            <input type="datetime-local" id="f-datetime">
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>รายละเอียดอาการ / ปัญหาที่พบ <span class="req">*</span></label>
+          <textarea id="f-desc" placeholder="อธิบายอาการที่พบ เช่น เครื่องมีเสียงดังผิดปกติ น้ำมันรั่ว ชิ้นงานออกมาไม่ได้ขนาด..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- อัปโหลดรูป -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon blue">📸</div>
+        <h3>แนบรูปภาพ (ไม่บังคับ)</h3>
+      </div>
+      <div class="card-body">
+        <div class="upload-zone" onclick="document.getElementById('f-imgs').click()">
+          <input type="file" id="f-imgs" multiple accept="image/*" onchange="previewImgs(event)">
+          <span class="uz-icon">📷</span>
+          <p>แตะเพื่อ<strong>ถ่ายรูปจากมือถือ</strong> หรืออัปโหลดไฟล์<br>
+          <small style="font-size:12px;color:var(--text-light);">JPG, PNG ได้หลายรูป</small></p>
+        </div>
+        <div class="preview-grid" id="img-preview"></div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="clearForm()">🗑️ ล้างข้อมูล</button>
+      <button class="btn btn-primary" onclick="submitForm()">✅ บันทึกและแจ้ง Slack</button>
+    </div>
+
+    <div id="no-slack-warn" style="display:none;margin-top:14px;background:var(--amber-light);border-radius:var(--r-sm);padding:12px 16px;font-size:13px;color:var(--amber);">
+      ⚠️ ยังไม่ได้ตั้งค่า Slack — ข้อมูลบันทึกแล้ว แต่ยังไม่มีการแจ้งเตือน ไปตั้งค่าได้ที่แท็บ ⚙️
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD PAGE ══════════ -->
+<div id="page-dash" class="page">
+  <div class="page-inner">
+    <div class="page-header">
+      <h2>Dashboard ภาพรวม</h2>
+      <p>สถิติและรายการซ่อมทั้งหมด คลิกที่รายการเพื่อดูรายละเอียดและอัปเดตสถานะ</p>
+    </div>
+
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="card">
+      <div class="card-body" style="padding-bottom:0;">
+        <div class="section-label">รายการทั้งหมด</div>
+        <div class="table-bar">
+          <select id="ft-type" onchange="renderTable()">
+            <option value="">ทุกประเภท</option>
+            <option value="repair">🔴 แจ้งซ่อม</option>
+            <option value="adjust">🟡 ปรับตั้ง</option>
+            <option value="pm">🔵 PM</option>
+          </select>
+          <select id="ft-status" onchange="renderTable()">
+            <option value="">ทุกสถานะ</option>
+            <option value="open">รอดำเนินการ</option>
+            <option value="progress">กำลังซ่อม</option>
+            <option value="done">เสร็จแล้ว</option>
+          </select>
+          <input type="text" id="ft-search" placeholder="🔍 ค้นหาเครื่องจักร..." oninput="renderTable()">
+          <div class="count-pill" id="count-pill">0 รายการ</div>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>รหัส</th>
+              <th>วัน/เวลา</th>
+              <th>เครื่องจักร</th>
+              <th>ประเภท</th>
+              <th>ด่วน</th>
+              <th>สถานะ</th>
+              <th>ผู้แจ้ง</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none;">
+          <div class="es-icon">📋</div>
+          <p>ยังไม่มีรายการ — ลองกรอกแบบฟอร์มแจ้งงานก่อนค่ะ</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SETTINGS PAGE ══════════ -->
+<div id="page-settings" class="page">
+  <div class="page-inner">
+    <div class="page-header">
+      <h2>ตั้งค่าระบบ</h2>
+      <p>เชื่อมต่อ Slack และ Google Sheets ทำครั้งเดียว ใช้ได้ตลอด</p>
+    </div>
+
+    <!-- Slack -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon amber">🔔</div>
+        <h3>Slack Webhook — แจ้งเตือนอัตโนมัติ</h3>
+      </div>
+      <div class="card-body">
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num-circle amber">1</div>
+            <div class="step-content">
+              <div class="step-title">เปิดเว็บ Slack API</div>
+              <div class="step-desc">ไปที่ <b>api.slack.com/apps</b> แล้ว Login ด้วยบัญชี Slack ของบริษัท</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle amber">2</div>
+            <div class="step-content">
+              <div class="step-title">สร้าง App ใหม่</div>
+              <div class="step-desc">กด <b>Create New App</b> → เลือก <b>From scratch</b> → ตั้งชื่อ เช่น "แจ้งซ่อม" → เลือก Workspace บริษัท → กด <b>Create App</b></div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle amber">3</div>
+            <div class="step-content">
+              <div class="step-title">เปิด Incoming Webhooks</div>
+              <div class="step-desc">ในเมนูซ้าย → <b>Incoming Webhooks</b> → สลับสวิตช์เป็น <b>On</b> → กด <b>Add New Webhook to Workspace</b> → เลือก channel → <b>Allow</b></div>
+              <div class="warn">⚠️ ถ้ายังไม่มี channel ให้เปิด Slack สร้าง channel ชื่อ #maintenance ก่อน แล้วค่อยกลับมา</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle amber">4</div>
+            <div class="step-content">
+              <div class="step-title">Copy URL มาใส่ด้านล่าง</div>
+              <div class="step-desc">URL จะขึ้นต้นด้วย <b>https://hooks.slack.com/services/...</b></div>
+              <div class="input-row">
+                <input type="text" id="slack-url" placeholder="https://hooks.slack.com/services/XXXX/XXXX/XXXX">
+                <button class="btn btn-primary" onclick="saveSlack()" style="white-space:nowrap;flex-shrink:0;">💾 บันทึก</button>
+                <button class="btn btn-outline" onclick="testSlack()" style="white-space:nowrap;flex-shrink:0;">🧪 ทดสอบ</button>
+              </div>
+              <div class="saved-msg" id="slack-ok">✅ บันทึก Slack URL แล้ว</div>
+              <div class="tip" style="margin-top:10px;">💡 กด "ทดสอบ" หลังใส่ URL — ถ้า Slack ได้รับข้อความ "ทดสอบระบบแจ้งซ่อม" แสดงว่าเชื่อมได้แล้ว</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Sheets -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon blue">📊</div>
+        <h3>Google Sheets — บันทึกข้อมูลถาวร</h3>
+      </div>
+      <div class="card-body">
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num-circle blue">1</div>
+            <div class="step-content">
+              <div class="step-title">สร้าง Google Sheet ใหม่</div>
+              <div class="step-desc">ไปที่ <b>sheets.google.com</b> → กด + สร้างไฟล์ใหม่ → ตั้งชื่อ เช่น "บันทึกการซ่อม 2025"</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle blue">2</div>
+            <div class="step-content">
+              <div class="step-title">เปิด Apps Script</div>
+              <div class="step-desc">คลิกเมนู <b>Extensions</b> (ส่วนขยาย) → <b>Apps Script</b> → จะเปิดหน้าใหม่</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle blue">3</div>
+            <div class="step-content">
+              <div class="step-title">วาง Code นี้ แล้ว Save</div>
+              <div class="step-desc">ลบ code เดิมออกทั้งหมด → วาง code ด้านล่าง → กด 💾 Save</div>
+              <div class="code-block">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    data.id, data.datetime, data.reporter,
+    data.dept, data.machine, data.type,
+    data.priority, data.desc, data.status,
+    data.images || ''
+  ]);
+  return ContentService.createTextOutput('OK');
+}</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle blue">4</div>
+            <div class="step-content">
+              <div class="step-title">Deploy → Web App</div>
+              <div class="step-desc">กด <b>Deploy</b> (มุมขวาบน) → <b>New deployment</b> → Type เลือก <b>Web app</b> → Who has access เลือก <b>Anyone</b> → <b>Deploy</b> → กด Allow</div>
+              <div class="warn">⚠️ ถ้าระบบขอ "Review permissions" ให้กด Allow ได้เลย เพราะเป็น script ของเราเอง</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num-circle blue">5</div>
+            <div class="step-content">
+              <div class="step-title">Copy Web App URL มาใส่ด้านล่าง</div>
+              <div class="input-row">
+                <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/XXXX/exec">
+                <button class="btn btn-primary" onclick="saveSheets()" style="white-space:nowrap;flex-shrink:0;">💾 บันทึก</button>
+              </div>
+              <div class="saved-msg" id="sheets-ok">✅ บันทึก Sheets URL แล้ว</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Machine list -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon teal">⚙️</div>
+        <h3>จัดการรายชื่อเครื่องจักร</h3>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">เพิ่ม / ลบ เครื่องจักรที่แสดงใน Dropdown — ตั้งชื่อให้ตรงกับในโรงงานได้เลยค่ะ</p>
+
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" id="mc-code" placeholder="รหัส เช่น MC-001" style="width:130px;flex-shrink:0;">
+          <input type="text" id="mc-name" placeholder="ชื่อเครื่อง เช่น เครื่องปั้ม #1">
+          <select id="mc-line" style="width:150px;flex-shrink:0;">
+            <option value="">— สายการผลิต —</option>
+            <option>แผนกตัดไม้</option>
+            <option>แผนกติดขอบ</option>
+            <option>แผนกเจาะ</option>
+            <option>แผนกประกอบ</option>
+            <option>แผนกขึ้นรูป</option>
+          </select>
+          <button class="btn btn-primary" onclick="addMachine()" style="flex-shrink:0;">+ เพิ่ม</button>
+        </div>
+
+        <div id="mc-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;"></div>
+        <p style="font-size:12px;color:var(--text-light);margin-top:10px;">💡 การเปลี่ยนแปลงจะมีผลทันทีในฟอร์มแจ้งงาน</p>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon" style="background:var(--red-light);">🗑️</div>
+        <h3>จัดการข้อมูล</h3>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">ลบข้อมูลทั้งหมดที่เก็บในอุปกรณ์นี้ (ไม่กระทบ Google Sheets)</p>
+        <button class="btn btn-danger" onclick="clearAll()">🗑️ ลบข้อมูลในอุปกรณ์นี้</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+
+    <!-- Header -->
+    <div class="modal-top">
+      <div class="modal-top-left">
+        <h3 id="m-title"></h3>
+        <div id="m-badges" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"></div>
+      </div>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- แจ้งงาน section -->
+    <div style="padding:0 20px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">📋 รายละเอียดการแจ้ง</div>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+    <div class="modal-imgs" id="m-imgs"></div>
+
+    <!-- ผลการซ่อม section -->
+    <div style="margin:4px 20px 0;border-top:1px solid var(--border-light);padding-top:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">🔧 บันทึกผลการซ่อม / ปรับตั้ง</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field">
+          <label>ชื่อช่างที่ซ่อม</label>
+          <input type="text" id="r-technician" placeholder="เช่น นายวิชัย ช่างดี">
+        </div>
+        <div class="field">
+          <label>เวลาที่ใช้ซ่อม</label>
+          <input type="text" id="r-duration" placeholder="เช่น 45 นาที / 2 ชั่วโมง">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>สาเหตุที่พบ</label>
+        <textarea id="r-cause" placeholder="เช่น ซีลยางเสื่อม น้ำมันรั่ว / ค่า offset คลาดเคลื่อน..." style="min-height:64px;"></textarea>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>วิธีการแก้ไข / สิ่งที่ทำ</label>
+        <textarea id="r-action" placeholder="เช่น เปลี่ยนซีลยางใหม่ ปรับค่า offset และทดสอบชิ้นงาน..." style="min-height:64px;"></textarea>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>อะไหล่ที่ใช้ (ถ้ามี)</label>
+        <input type="text" id="r-parts" placeholder="เช่น ซีลยาง 2 ชิ้น, น้ำมันไฮดรอลิก 1 ลิตร">
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>รูปภาพหลังซ่อมเสร็จ</label>
+        <div class="upload-zone" onclick="document.getElementById('r-imgs-input').click()" style="padding:14px;">
+          <input type="file" id="r-imgs-input" multiple accept="image/*" onchange="previewResultImgs(event)">
+          <span class="uz-icon" style="font-size:22px;">📷</span>
+          <p style="font-size:12px;">แตะเพื่อถ่ายรูปหลังซ่อมเสร็จ</p>
+        </div>
+        <div class="preview-grid" id="r-imgs-preview"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer" style="gap:8px;flex-wrap:wrap;">
+      <label style="white-space:nowrap;">สถานะ</label>
+      <select class="status-sel" id="m-status" style="flex:1;min-width:160px;">
+        <option value="open">🟡 รอดำเนินการ</option>
+        <option value="progress">🔵 กำลังซ่อม</option>
+        <option value="done">🟢 เสร็จแล้ว</option>
+      </select>
+      <button class="btn btn-primary" onclick="saveResult()" style="flex-shrink:0;">💾 บันทึกผล</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span class="t-icon" id="t-icon"></span><span id="t-msg"></span></div>
+
+<script>
+let records = JSON.parse(localStorage.getItem('mx2_records') || '[]');
+let selType = '', selPrio = '', modalId = null, previewFiles = [];
+
+// ── Nav ──────────────────────────────────────────────────────────────
+function showPage(id, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (tab) tab.classList.add('active');
+  if (id === 'dash') { renderStats(); renderTable(); }
+  if (id === 'settings') loadSettings();
+}
+
+// ── Selectors ────────────────────────────────────────────────────────
+function selectType(val, el) {
+  selType = val;
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectPrio(el) {
+  selPrio = el.dataset.val;
+  document.querySelectorAll('.prio-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── Images ───────────────────────────────────────────────────────────
+function previewImgs(e) {
+  previewFiles = Array.from(e.target.files);
+  const grid = document.getElementById('img-preview');
+  grid.innerHTML = '';
+  previewFiles.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.innerHTML = `<img src="${ev.target.result}"><div class="del" onclick="removeImg(${i})">✕</div>`;
+      grid.appendChild(item);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+function removeImg(i) {
+  previewFiles.splice(i, 1);
+  const dt = new DataTransfer();
+  previewFiles.forEach(f => dt.items.add(f));
+  document.getElementById('f-imgs').files = dt.files;
+  previewImgs({ target: { files: dt.files } });
+}
+
+// ── Submit ───────────────────────────────────────────────────────────
+async function submitForm() {
+  const name = v('f-name'), dept = v('f-dept'), machine = v('f-machine'), desc = v('f-desc'), dt = v('f-datetime');
+  if (!name || !dept || !machine || !selType || !selPrio || !desc) {
+    toast('⚠️ กรุณากรอกข้อมูลที่มี * ให้ครบ', true); return;
+  }
+  const id = 'MX-' + String(records.length + 1).padStart(4, '0');
+  const datetime = dt || new Date().toISOString().slice(0, 16);
+  const imgData = [];
+  for (const f of previewFiles) imgData.push(await b64(f));
+  const rec = { id, datetime, reporter: name, dept, machine, type: selType, priority: selPrio, desc, status: 'open', images: imgData };
+  records.push(rec);
+  save();
+
+  const su = localStorage.getItem('mx2_slack');
+  if (su) { sendSlack(rec, su); document.getElementById('no-slack-warn').style.display = 'none'; }
+  else document.getElementById('no-slack-warn').style.display = 'block';
+
+  const shu = localStorage.getItem('mx2_sheets');
+  if (shu) sendSheets(rec, shu);
+
+  toast('✅ บันทึกสำเร็จ — ' + id);
+  clearForm();
+}
+
+function b64(file) {
+  return new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(file); });
+}
+
+// ── Slack ─────────────────────────────────────────────────────────────
+async function sendSlack(rec, url) {
+  const tl = { repair:'🔴 แจ้งซ่อม', adjust:'🟡 ปรับตั้งเครื่อง', pm:'🔵 PM' }[rec.type];
+  const pl = { urgent:'🚨 เร่งด่วนมาก', high:'⚡ สูง', normal:'🟢 ปกติ', low:'⬇️ ต่ำ' }[rec.priority];
+  const body = { blocks: [
+    { type:'header', text:{ type:'plain_text', text: tl + ' — ' + rec.id }},
+    { type:'section', fields:[
+      { type:'mrkdwn', text: '*เครื่อง:*\n' + rec.machine },
+      { type:'mrkdwn', text: '*แผนก:*\n' + rec.dept },
+      { type:'mrkdwn', text: '*ความเร่งด่วน:*\n' + pl },
+      { type:'mrkdwn', text: '*ผู้แจ้ง:*\n' + rec.reporter },
+    ]},
+    { type:'section', text:{ type:'mrkdwn', text: '*อาการ:*\n' + rec.desc }},
+    { type:'context', elements:[{ type:'mrkdwn', text: rec.datetime.replace('T',' ') + '  |  รูปภาพ: ' + rec.images.length + ' รูป' }]}
+  ]};
+  try { await fetch(url, { method:'POST', body: JSON.stringify(body) }); } catch(e) {}
+}
+
+function sendSheets(rec, url) {
+  fetch(url, { method:'POST', body: JSON.stringify({ ...rec, images: rec.images.length + ' รูป' }) }).catch(() => {});
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────
+function renderStats() {
+  const total = records.length, open = records.filter(r=>r.status==='open').length;
+  const prog = records.filter(r=>r.status==='progress').length, done = records.filter(r=>r.status==='done').length;
+  document.getElementById('stats-grid').innerHTML = [
+    { num: total, lbl: 'รายการทั้งหมด', color: '#0F6E56', dot: '#1D9E75' },
+    { num: open,  lbl: 'รอดำเนินการ',  color: '#BA7517', dot: '#EF9F27' },
+    { num: prog,  lbl: 'กำลังซ่อม',    color: '#185FA5', dot: '#378ADD' },
+    { num: done,  lbl: 'เสร็จแล้ว',    color: '#3B6D11', dot: '#639922' },
+  ].map(s => `<div class="stat-card">
+    <div class="stat-num" style="color:${s.color}">${s.num}</div>
+    <div class="stat-label"><span class="stat-dot" style="background:${s.dot}"></span>${s.lbl}</div>
+  </div>`).join('');
+}
+
+function renderTable() {
+  const tf = g('ft-type').value, sf = g('ft-status').value, q = g('ft-search').value.toLowerCase();
+  let data = records.filter(r =>
+    (!tf || r.type===tf) && (!sf || r.status===sf) &&
+    (!q || r.machine.toLowerCase().includes(q) || r.reporter.toLowerCase().includes(q))
+  ).slice().reverse();
+  g('count-pill').textContent = data.length + ' รายการ';
+  g('empty-state').style.display = data.length ? 'none' : 'block';
+  g('tbl-body').innerHTML = data.map(r => {
+    const typB = { repair:`<span class="badge badge-repair">🔴 ซ่อม</span>`, adjust:`<span class="badge badge-adjust">🟡 ปรับตั้ง</span>`, pm:`<span class="badge badge-pm">🔵 PM</span>` }[r.type];
+    const prioB = { urgent:`<span class="badge badge-urgent">🚨 เร่งด่วน</span>`, high:`<span class="badge badge-high">⚡ สูง</span>`, normal:`<span class="badge badge-normal">🟢 ปกติ</span>`, low:`<span class="badge" style="background:var(--gray-light);color:var(--gray);">⬇️ ต่ำ</span>` }[r.priority];
+    const statB = { open:`<span class="badge badge-open">🟡 รอ</span>`, progress:`<span class="badge badge-progress">🔵 กำลังซ่อม</span>`, done:`<span class="badge badge-done">🟢 เสร็จ</span>` }[r.status];
+    const hasResult = r.result && r.result.action;
+    return `<tr>
+      <td style="font-size:11px;color:var(--text-muted);font-weight:600;">${r.id}</td>
+      <td class="dt-col">${r.datetime.replace('T','<br>').slice(0,16)}</td>
+      <td class="machine-col">${r.machine}</td>
+      <td>${typB}</td><td>${prioB}</td>
+      <td>${statB}${hasResult ? ' <span class="badge" style="background:var(--teal-light);color:var(--teal);font-size:10px;">📝 มีผล</span>' : ''}</td>
+      <td style="font-size:13px;">${r.reporter}</td>
+      <td><button class="view-btn" onclick="openModal('${r.id}')">ดู / บันทึกผล</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────
+let resultFiles = [];
+
+function openModal(id) {
+  const rec = records.find(r=>r.id===id); if (!rec) return;
+  modalId = id;
+  resultFiles = [];
+
+  const tl = { repair:'🔴 แจ้งซ่อม', adjust:'🟡 ปรับตั้ง', pm:'🔵 PM' }[rec.type];
+  const pl = { urgent:'🚨 เร่งด่วน', high:'⚡ สูง', normal:'🟢 ปกติ', low:'⬇️ ต่ำ' }[rec.priority];
+  g('m-title').textContent = rec.machine + ' — ' + rec.id;
+  g('m-badges').innerHTML = `<span class="badge badge-${rec.type==='repair'?'repair':rec.type==='adjust'?'adjust':'pm'}">${tl}</span><span class="badge badge-${rec.priority}">${pl}</span>`;
+
+  g('m-body').innerHTML = [
+    ['วันที่/เวลา', rec.datetime.replace('T',' ')],
+    ['ผู้แจ้ง', rec.reporter],
+    ['แผนก', rec.dept],
+    ['รายละเอียด', rec.desc],
+  ].map(([l,val]) => `<div class="detail-item"><span class="detail-lbl">${l}</span><span class="detail-val">${val}</span></div>`).join('')
+  + (rec.result && rec.result.savedAt ? `<div class="detail-item" style="background:var(--teal-pale);border-radius:6px;margin-top:4px;"><span class="detail-lbl" style="color:var(--teal);">บันทึกผลล่าสุด</span><span class="detail-val" style="color:var(--teal);">${rec.result.savedAt.replace('T',' ')}</span></div>` : '');
+
+  // รูปภาพตอนแจ้ง
+  g('m-imgs').innerHTML = (rec.images||[]).map(s=>`<img src="${s}" onclick="window.open(this.src)">`).join('');
+
+  // โหลดผลการซ่อม (ถ้ามี)
+  const res = rec.result || {};
+  g('r-technician').value = res.technician || '';
+  g('r-duration').value   = res.duration   || '';
+  g('r-cause').value      = res.cause      || '';
+  g('r-action').value     = res.action     || '';
+  g('r-parts').value      = res.parts      || '';
+  g('r-imgs-preview').innerHTML = (res.images||[]).map(s=>`<img src="${s}" class="preview-img" onclick="window.open(this.src)">`).join('');
+
+  g('m-status').value = rec.status;
+  g('modal').classList.add('open');
+}
+
+function closeModal() { g('modal').classList.remove('open'); modalId = null; resultFiles = []; }
+
+function previewResultImgs(e) {
+  const newFiles = Array.from(e.target.files);
+  resultFiles = [...resultFiles, ...newFiles];
+  const preview = g('r-imgs-preview');
+  newFiles.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = document.createElement('img');
+      img.src = ev.target.result;
+      img.className = 'preview-img';
+      img.onclick = () => window.open(ev.target.result);
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+async function saveResult() {
+  if (!modalId) return;
+  const i = records.findIndex(r=>r.id===modalId);
+  if (i === -1) return;
+
+  // encode new result images
+  const existingImgs = records[i].result?.images || [];
+  const newImgs = [];
+  for (const f of resultFiles) newImgs.push(await b64(f));
+
+  records[i].status = g('m-status').value;
+  records[i].result = {
+    technician: g('r-technician').value.trim(),
+    duration:   g('r-duration').value.trim(),
+    cause:      g('r-cause').value.trim(),
+    action:     g('r-action').value.trim(),
+    parts:      g('r-parts').value.trim(),
+    images:     [...existingImgs, ...newImgs],
+    savedAt:    new Date().toISOString().slice(0,16),
+  };
+  save();
+  renderStats();
+  renderTable();
+
+  // ส่งผลการซ่อมไป Slack ด้วย (ถ้า done)
+  const su = localStorage.getItem('mx2_slack');
+  if (su && records[i].status === 'done' && records[i].result.action) {
+    sendSlackResult(records[i], su);
+  }
+
+  toast('✅ บันทึกผลการซ่อมแล้ว');
+  closeModal();
+}
+
+async function sendSlackResult(rec, url) {
+  const res = rec.result;
+  const body = { blocks: [
+    { type:'header', text:{ type:'plain_text', text:'🟢 ปิดงาน — ' + rec.id + ' เสร็จแล้ว' }},
+    { type:'section', fields:[
+      { type:'mrkdwn', text:'*เครื่อง:*\n' + rec.machine },
+      { type:'mrkdwn', text:'*ช่างที่ซ่อม:*\n' + (res.technician||'-') },
+      { type:'mrkdwn', text:'*เวลาที่ใช้:*\n' + (res.duration||'-') },
+      { type:'mrkdwn', text:'*อะไหล่:*\n' + (res.parts||'-') },
+    ]},
+    { type:'section', text:{ type:'mrkdwn', text:'*สาเหตุ:*\n' + (res.cause||'-') + '\n\n*วิธีแก้ไข:*\n' + (res.action||'-') }},
+    { type:'context', elements:[{ type:'mrkdwn', text:'บันทึกเมื่อ ' + res.savedAt }]}
+  ]};
+  try { await fetch(url, { method:'POST', body: JSON.stringify(body) }); } catch(e) {}
+}
+
+// ── Machine list ──────────────────────────────────────────────────────
+const DEFAULT_MACHINES = [
+  { code:'MC-001', name:'เครื่องตัดไม้ SCM',         line:'แผนกตัดไม้'   },
+  { code:'MC-002', name:'เครื่องตัดสไลด์ Griggio',   line:'แผนกตัดไม้'   },
+  { code:'MC-003', name:'เครื่องติดขอบ Nanxing',     line:'แผนกติดขอบ'   },
+  { code:'MC-004', name:'เครื่องติดขอบ SCM',         line:'แผนกติดขอบ'   },
+  { code:'MC-005', name:'เครื่องเจาะใหญ่ Homag',     line:'แผนกเจาะ'     },
+  { code:'MC-006', name:'เครื่องเจาะเล็ก Multi boring', line:'แผนกเจาะ'  },
+  { code:'MC-007', name:'เครื่องเจาะ CNC Biesse',    line:'แผนกเจาะ'     },
+  { code:'MC-008', name:'เครื่องเจาะ CNC Weeke',     line:'แผนกเจาะ'     },
+  { code:'MC-009', name:'เครื่องอัด Hess1',          line:'แผนกประกอบ'   },
+  { code:'MC-010', name:'เครื่องอัด Hess2',          line:'แผนกประกอบ'   },
+  { code:'MC-011', name:'เครื่องตัดสไลด์ JET',       line:'แผนกประกอบ'   },
+  { code:'MC-012', name:'เครื่อง CNC BRO',           line:'แผนกขึ้นรูป'  },
+];
+
+let machines = JSON.parse(localStorage.getItem('mx2_machines') || 'null') || DEFAULT_MACHINES;
+
+function saveMachines() { localStorage.setItem('mx2_machines', JSON.stringify(machines)); }
+
+function buildMachineDropdown() {
+  const sel = g('f-machine');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— เลือกเครื่องจักร —</option>';
+  const lines = [...new Set(machines.map(m => m.line))];
+  lines.forEach(line => {
+    const grp = document.createElement('optgroup');
+    grp.label = line;
+    machines.filter(m => m.line === line).forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.code + ' — ' + m.name;
+      opt.textContent = m.code + ' — ' + m.name;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  });
+  if (cur) sel.value = cur;
+}
+
+function renderMachineList() {
+  const list = g('mc-list');
+  if (!list) return;
+  if (machines.length === 0) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);padding:8px 0;">ยังไม่มีเครื่องจักร — กรอกข้อมูลด้านบนแล้วกด + เพิ่ม</p>';
+    return;
+  }
+  const lines = [...new Set(machines.map(m => m.line))];
+  list.innerHTML = lines.map(line => {
+    const items = machines.filter(m => m.line === line);
+    return `<div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;padding-left:2px;">${line}</div>
+      ${items.map((m, gi) => {
+        const idx = machines.indexOf(m);
+        return `<div class="mc-row">
+          <span class="mc-code">${m.code}</span>
+          <span class="mc-label">${m.name}</span>
+          <button class="mc-del" onclick="delMachine(${idx})" title="ลบ">×</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function addMachine() {
+  const code = g('mc-code').value.trim();
+  const name = g('mc-name').value.trim();
+  const line = g('mc-line').value;
+  if (!code || !name || !line) { toast('⚠️ กรุณากรอก รหัส ชื่อ และสายการผลิต ให้ครบ', true); return; }
+  if (machines.find(m => m.code === code)) { toast('⚠️ รหัสเครื่องนี้มีอยู่แล้ว', true); return; }
+  machines.push({ code, name, line });
+  saveMachines(); buildMachineDropdown(); renderMachineList();
+  g('mc-code').value=''; g('mc-name').value=''; g('mc-line').value='';
+  toast('✅ เพิ่ม ' + code + ' — ' + name + ' แล้ว');
+}
+
+function delMachine(idx) {
+  const m = machines[idx];
+  if (!confirm('ลบ ' + m.code + ' — ' + m.name + ' ?')) return;
+  machines.splice(idx, 1);
+  saveMachines(); buildMachineDropdown(); renderMachineList();
+  toast('ลบ ' + m.code + ' แล้ว');
+}
+
+// ── Settings ───────────────────────────────────────────────────────────
+function loadSettings() {
+  const su = localStorage.getItem('mx2_slack'), shu = localStorage.getItem('mx2_sheets');
+  if (su) { g('slack-url').value = su; g('slack-ok').style.display = 'block'; }
+  if (shu) { g('sheets-url').value = shu; g('sheets-ok').style.display = 'block'; }
+  renderMachineList();
+}
+function saveSlack() {
+  const url = g('slack-url').value.trim();
+  if (!url) { toast('⚠️ กรุณาใส่ URL', true); return; }
+  localStorage.setItem('mx2_slack', url); g('slack-ok').style.display = 'block';
+  toast('✅ บันทึก Slack URL แล้ว');
+}
+async function testSlack() {
+  const url = g('slack-url').value.trim() || localStorage.getItem('mx2_slack');
+  if (!url) { toast('⚠️ ใส่ URL ก่อนค่ะ', true); return; }
+  try {
+    await fetch(url, { method:'POST', body: JSON.stringify({ text:'🔧 ทดสอบระบบแจ้งซ่อม — เชื่อมต่อสำเร็จ ✅' }) });
+    toast('✅ ส่ง Slack ได้แล้ว! ตรวจสอบ channel ของคุณ');
+  } catch(e) { toast('❌ ส่งไม่ได้ ตรวจสอบ URL อีกครั้ง', true); }
+}
+function saveSheets() {
+  const url = g('sheets-url').value.trim();
+  if (!url) { toast('⚠️ กรุณาใส่ URL', true); return; }
+  localStorage.setItem('mx2_sheets', url); g('sheets-ok').style.display = 'block';
+  toast('✅ บันทึก Google Sheets URL แล้ว');
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function save() { localStorage.setItem('mx2_records', JSON.stringify(records)); }
+function g(id) { return document.getElementById(id); }
+function v(id) { return g(id).value.trim(); }
+function clearForm() {
+  ['f-name','f-datetime','f-desc'].forEach(id => g(id).value='');
+  g('f-dept').value=''; g('f-machine').value='';
+  g('img-preview').innerHTML=''; g('f-imgs').value='';
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.prio-card').forEach(c => c.classList.remove('selected'));
+  selType=''; selPrio=''; previewFiles=[];
+  g('no-slack-warn').style.display='none';
+}
+function clearAll() {
+  if (!confirm('ลบข้อมูลทั้งหมดในอุปกรณ์นี้?')) return;
+  localStorage.removeItem('mx2_records'); records = []; toast('ลบข้อมูลแล้ว');
+}
+let toastTimer;
+function toast(msg, err) {
+  const el = g('toast'), ti = g('t-icon'), tm = g('t-msg');
+  ti.textContent = err ? '⚠️' : '✅';
+  tm.textContent = msg;
+  el.className = 'show' + (err?' err':'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className='', 3500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+g('f-datetime').value = new Date().toISOString().slice(0,16);
+buildMachineDropdown();
+if (records.length === 0) {
+  records = [
+    { id:'MX-0001', datetime:'2025-03-10T08:30', reporter:'สมชาย ใจดี', dept:'สายการผลิต A', machine:'เครื่องปั้ม #3 (MC-003)', type:'repair', priority:'urgent', desc:'เครื่องมีเสียงดังผิดปกติและน้ำมันรั่ว หยุดสายการผลิตทันที', status:'progress', images:[] },
+    { id:'MX-0002', datetime:'2025-03-10T10:15', reporter:'มาลี สวัสดี', dept:'สายการผลิต B', machine:'เครื่อง CNC #1 (MC-101)', type:'adjust', priority:'normal', desc:'ชิ้นงานออกมาไม่ได้ขนาด ต้องปรับค่า offset', status:'open', images:[] },
+    { id:'MX-0003', datetime:'2025-03-09T14:00', reporter:'วิชัย ดีงาม', dept:'แผนกบรรจุ', machine:'สายพานลำเลียง #2', type:'pm', priority:'normal', desc:'PM รายเดือน ตรวจสอบสายพาน น้ำมัน และน็อตสกรู', status:'done', images:[] },
+    { id:'MX-0004', datetime:'2025-03-08T09:00', reporter:'สมหญิง รักดี', dept:'สายการผลิต C', machine:'MC-305 — เครื่องกด #5', type:'repair', priority:'high', desc:'กระบอกไฮดรอลิกไม่ทำงาน แรงดันต่ำ', status:'done', images:[],
+      result:{ technician:'วิชัย ช่างดี', duration:'2 ชั่วโมง', cause:'น้ำมันไฮดรอลิกรั่วที่ข้อต่อ ซีลยางเสื่อมสภาพ', action:'เปลี่ยนซีลยางใหม่ เติมน้ำมันไฮดรอลิก และทดสอบแรงดัน', parts:'ซีลยาง O-ring 4 ชิ้น, น้ำมันไฮดรอลิก 1 ลิตร', images:[], savedAt:'2025-03-08T11:30' } },
+  ];
+  save();
+}
+</script>
+</body>
+</html>
