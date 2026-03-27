@@ -713,10 +713,10 @@ tr:hover td { background: var(--gray-pale); }
 let records = JSON.parse(localStorage.getItem('mx2_records') || '[]');
 let selType = '', selPrio = '', modalId = null, previewFiles = [];
 
-const SLACK_URL = 'https://hooks.slack.com/services/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';
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyJKsaE6geUprP4mcSFM8GEYbXPB2qtqG8Lnempq2-MCEu0hTzvASx3-OO9uE30bNXk9A/exec';
 
 function getSlackUrl() {
-  return localStorage.getItem('mx2_slack') || SLACK_URL;
+  return PROXY_URL;
 }
 
 // ── Nav ──────────────────────────────────────────────────────────────
