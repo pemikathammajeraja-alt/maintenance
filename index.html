@@ -249,6 +249,23 @@ tr:hover td { background: var(--gray-pale); }
 /* ── Divider ── */
 .divider { height: 1px; background: var(--border-light); margin: 20px 0; }
 .section-label { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+.status-tab-btn { padding:7px 14px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; border:1.5px solid var(--border); background:var(--white); color:var(--text-muted); transition:all .15s; font-family:'Sarabun',sans-serif; }
+.status-tab-btn:hover { border-color:var(--teal-mid); color:var(--teal); }
+.status-tab-btn.active { background:var(--teal); border-color:var(--teal); color:#fff; }
+.kanban-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.job-card { background:var(--white); border:1px solid var(--border-light); border-radius:var(--r); padding:14px 16px; box-shadow:var(--shadow-sm); cursor:pointer; transition:all .15s; border-left:4px solid var(--border); }
+.job-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+.job-card.repair { border-left-color:#E24B4A; }
+.job-card.adjust { border-left-color:#BA7517; }
+.job-card.pm { border-left-color:#185FA5; }
+.job-card .jc-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px; }
+.job-card .jc-machine { font-size:14px; font-weight:700; color:var(--text); flex:1; line-height:1.4; }
+.job-card .jc-id { font-size:11px; color:var(--text-muted); font-weight:600; background:var(--gray-light); padding:2px 7px; border-radius:4px; flex-shrink:0; }
+.job-card .jc-desc { font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.job-card .jc-bottom { display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:space-between; }
+.job-card .jc-badges { display:flex; gap:5px; flex-wrap:wrap; }
+.job-card .jc-meta { font-size:11px; color:var(--text-light); }
+.job-card .jc-result { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--teal); background:var(--teal-light); padding:2px 7px; border-radius:4px; margin-top:6px; }
 .mc-row { display:flex; align-items:center; gap:10px; background:var(--gray-pale); border:1px solid var(--border-light); border-radius:var(--r-sm); padding:9px 12px; font-size:13px; }
 .mc-row .mc-code { font-family: monospace; font-size:12px; color:var(--teal); background:var(--teal-light); padding:2px 8px; border-radius:4px; font-weight:600; flex-shrink:0; }
 .mc-row .mc-label { flex:1; color:var(--text); font-weight:500; }
@@ -419,53 +436,60 @@ tr:hover td { background: var(--gray-pale); }
 <!-- ══════════ DASHBOARD PAGE ══════════ -->
 <div id="page-dash" class="page">
   <div class="page-inner">
-    <div class="page-header">
-      <h2>Dashboard ภาพรวม</h2>
-      <p>สถิติและรายการซ่อมทั้งหมด คลิกที่รายการเพื่อดูรายละเอียดและอัปเดตสถานะ</p>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h2>Dashboard ภาพรวม</h2>
+        <p>สถิติและรายการซ่อมทั้งหมด คลิกที่รายการเพื่อดูรายละเอียด</p>
+      </div>
+      <button class="btn btn-outline" onclick="clearAllData()" style="font-size:13px;padding:8px 16px;border-color:var(--red-light);color:var(--red);">🗑️ ล้างข้อมูลทั้งหมด</button>
     </div>
 
+    <!-- Stats -->
     <div class="stats-grid" id="stats-grid"></div>
 
-    <div class="card">
-      <div class="card-body" style="padding-bottom:0;">
-        <div class="section-label">รายการทั้งหมด</div>
-        <div class="table-bar">
-          <select id="ft-type" onchange="renderTable()">
-            <option value="">ทุกประเภท</option>
-            <option value="repair">🔴 แจ้งซ่อม</option>
-            <option value="adjust">🟡 ปรับตั้ง</option>
-            <option value="pm">🔵 PM</option>
-          </select>
-          <select id="ft-status" onchange="renderTable()">
-            <option value="">ทุกสถานะ</option>
-            <option value="open">รอดำเนินการ</option>
-            <option value="progress">กำลังซ่อม</option>
-            <option value="done">เสร็จแล้ว</option>
-          </select>
-          <input type="text" id="ft-search" placeholder="🔍 ค้นหาเครื่องจักร..." oninput="renderTable()">
-          <div class="count-pill" id="count-pill">0 รายการ</div>
+    <!-- Charts row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;" id="charts-row">
+      <div class="card">
+        <div class="card-header"><div class="card-header-icon teal">📊</div><h3>ประเภทงาน</h3></div>
+        <div class="card-body" style="padding-top:12px;">
+          <div id="chart-type"></div>
         </div>
       </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>รหัส</th>
-              <th>วัน/เวลา</th>
-              <th>เครื่องจักร</th>
-              <th>ประเภท</th>
-              <th>ด่วน</th>
-              <th>สถานะ</th>
-              <th>ผู้แจ้ง</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tbl-body"></tbody>
-        </table>
-        <div id="empty-state" class="empty-state" style="display:none;">
-          <div class="es-icon">📋</div>
-          <p>ยังไม่มีรายการ — ลองกรอกแบบฟอร์มแจ้งงานก่อนค่ะ</p>
+      <div class="card">
+        <div class="card-header"><div class="card-header-icon amber">⚡</div><h3>เครื่องจักรที่แจ้งซ่อมบ่อย</h3></div>
+        <div class="card-body" style="padding-top:12px;">
+          <div id="chart-machine"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Status tabs -->
+    <div class="card">
+      <div class="card-body" style="padding-bottom:0;">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">
+            <button class="status-tab-btn active" data-status="" onclick="setStatusTab(this,'')">ทั้งหมด</button>
+            <button class="status-tab-btn" data-status="open" onclick="setStatusTab(this,'open')">🟡 รอดำเนินการ</button>
+            <button class="status-tab-btn" data-status="progress" onclick="setStatusTab(this,'progress')">🔵 กำลังซ่อม</button>
+            <button class="status-tab-btn" data-status="done" onclick="setStatusTab(this,'done')">🟢 เสร็จแล้ว</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="ft-type" onchange="renderTable()" style="width:auto;font-size:13px;padding:6px 10px;">
+              <option value="">ทุกประเภท</option>
+              <option value="repair">🔴 ซ่อม</option>
+              <option value="adjust">🟡 ปรับตั้ง</option>
+              <option value="pm">🔵 PM</option>
+            </select>
+            <input type="text" id="ft-search" placeholder="🔍 ค้นหา..." oninput="renderTable()" style="width:160px;font-size:13px;padding:6px 10px;">
+            <div class="count-pill" id="count-pill">0 รายการ</div>
+          </div>
+        </div>
+        <input type="hidden" id="ft-status" value="">
+      </div>
+      <div id="kanban-board" style="padding:0 20px 20px;"></div>
+      <div id="empty-state" class="empty-state" style="display:none;padding:48px 20px;">
+        <div class="es-icon">📋</div>
+        <p>ยังไม่มีรายการ — ลองกรอกแบบฟอร์มแจ้งงานก่อนค่ะ</p>
       </div>
     </div>
   </div>
@@ -725,7 +749,7 @@ function showPage(id, tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (tab) tab.classList.add('active');
-  if (id === 'dash') { renderStats(); renderTable(); }
+  if (id === 'dash') { renderStats(); renderTable(); renderCharts(); }
   if (id === 'settings') loadSettings();
 }
 
@@ -830,29 +854,90 @@ function renderStats() {
   </div>`).join('');
 }
 
+function setStatusTab(el, val) {
+  document.querySelectorAll('.status-tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  g('ft-status').value = val;
+  renderTable();
+}
+
+function renderCharts() {
+  if (!records.length) {
+    g('chart-type').innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px 0;">ยังไม่มีข้อมูล</p>';
+    g('chart-machine').innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px 0;">ยังไม่มีข้อมูล</p>';
+    return;
+  }
+  const typeCount = { repair: 0, adjust: 0, pm: 0 };
+  records.forEach(r => typeCount[r.type] = (typeCount[r.type]||0) + 1);
+  const typeData = [
+    { label:'🔴 แจ้งซ่อม', val: typeCount.repair, color:'#E24B4A', bg:'#FCEBEB' },
+    { label:'🟡 ปรับตั้ง', val: typeCount.adjust, color:'#BA7517', bg:'#FAEEDA' },
+    { label:'🔵 PM', val: typeCount.pm, color:'#185FA5', bg:'#E6F1FB' },
+  ];
+  const maxType = Math.max(...typeData.map(d=>d.val), 1);
+  g('chart-type').innerHTML = typeData.map(d => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span style="font-size:12px;color:var(--text-muted);min-width:80px;">${d.label}</span>
+      <div style="flex:1;background:var(--gray-light);border-radius:4px;height:20px;overflow:hidden;">
+        <div style="width:${Math.round(d.val/maxType*100)}%;background:${d.color};height:100%;border-radius:4px;transition:width .3s;"></div>
+      </div>
+      <span style="font-size:13px;font-weight:600;color:${d.color};min-width:24px;text-align:right;">${d.val}</span>
+    </div>`).join('');
+
+  const macCount = {};
+  records.forEach(r => { const k = r.machine.split('—')[0].trim(); macCount[k] = (macCount[k]||0)+1; });
+  const macTop = Object.entries(macCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxMac = Math.max(...macTop.map(d=>d[1]), 1);
+  g('chart-machine').innerHTML = macTop.length ? macTop.map(([name, val]) => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span style="font-size:12px;color:var(--text-muted);min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+      <div style="flex:1;background:var(--gray-light);border-radius:4px;height:20px;overflow:hidden;">
+        <div style="width:${Math.round(val/maxMac*100)}%;background:#1D9E75;height:100%;border-radius:4px;transition:width .3s;"></div>
+      </div>
+      <span style="font-size:13px;font-weight:600;color:var(--teal);min-width:24px;text-align:right;">${val}</span>
+    </div>`).join('') : '<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px 0;">ยังไม่มีข้อมูล</p>';
+}
+
+function clearAllData() {
+  if (!confirm('ลบข้อมูลทั้งหมดในอุปกรณ์นี้?\n(ไม่กระทบ Google Sheets)')) return;
+  localStorage.removeItem('mx2_records');
+  records = [];
+  renderStats(); renderTable(); renderCharts();
+  toast('🗑️ ล้างข้อมูลแล้ว');
+}
+
 function renderTable() {
   const tf = g('ft-type').value, sf = g('ft-status').value, q = g('ft-search').value.toLowerCase();
   let data = records.filter(r =>
     (!tf || r.type===tf) && (!sf || r.status===sf) &&
     (!q || r.machine.toLowerCase().includes(q) || r.reporter.toLowerCase().includes(q))
   ).slice().reverse();
+
   g('count-pill').textContent = data.length + ' รายการ';
   g('empty-state').style.display = data.length ? 'none' : 'block';
-  g('tbl-body').innerHTML = data.map(r => {
-    const typB = { repair:`<span class="badge badge-repair">🔴 ซ่อม</span>`, adjust:`<span class="badge badge-adjust">🟡 ปรับตั้ง</span>`, pm:`<span class="badge badge-pm">🔵 PM</span>` }[r.type];
-    const prioB = { urgent:`<span class="badge badge-urgent">🚨 เร่งด่วน</span>`, high:`<span class="badge badge-high">⚡ สูง</span>`, normal:`<span class="badge badge-normal">🟢 ปกติ</span>`, low:`<span class="badge" style="background:var(--gray-light);color:var(--gray);">⬇️ ต่ำ</span>` }[r.priority];
-    const statB = { open:`<span class="badge badge-open">🟡 รอ</span>`, progress:`<span class="badge badge-progress">🔵 กำลังซ่อม</span>`, done:`<span class="badge badge-done">🟢 เสร็จ</span>` }[r.status];
+
+  const typB = { repair:`<span class="badge badge-repair">🔴 ซ่อม</span>`, adjust:`<span class="badge badge-adjust">🟡 ปรับตั้ง</span>`, pm:`<span class="badge badge-pm">🔵 PM</span>` };
+  const prioB = { urgent:`<span class="badge badge-urgent">🚨 เร่งด่วน</span>`, high:`<span class="badge badge-high">⚡ สูง</span>`, normal:`<span class="badge badge-normal">🟢 ปกติ</span>`, low:`<span class="badge" style="background:var(--gray-light);color:var(--gray);font-size:11px;padding:3px 8px;border-radius:20px;">⬇️ ต่ำ</span>` };
+  const statB = { open:`<span class="badge badge-open">🟡 รอ</span>`, progress:`<span class="badge badge-progress">🔵 กำลังซ่อม</span>`, done:`<span class="badge badge-done">🟢 เสร็จ</span>` };
+
+  g('kanban-board').innerHTML = data.length ? `<div class="kanban-grid">${data.map(r => {
+    const macShort = r.machine.length > 30 ? r.machine.slice(0,30)+'…' : r.machine;
+    const dt = r.datetime.replace('T',' ').slice(0,16);
     const hasResult = r.result && r.result.action;
-    return `<tr>
-      <td style="font-size:11px;color:var(--text-muted);font-weight:600;">${r.id}</td>
-      <td class="dt-col">${r.datetime.replace('T','<br>').slice(0,16)}</td>
-      <td class="machine-col">${r.machine}</td>
-      <td>${typB}</td><td>${prioB}</td>
-      <td>${statB}${hasResult ? ' <span class="badge" style="background:var(--teal-light);color:var(--teal);font-size:10px;">📝 มีผล</span>' : ''}</td>
-      <td style="font-size:13px;">${r.reporter}</td>
-      <td><button class="view-btn" onclick="openModal('${r.id}')">ดู / บันทึกผล</button></td>
-    </tr>`;
-  }).join('');
+    return `<div class="job-card ${r.type}" onclick="openModal('${r.id}')">
+      <div class="jc-top">
+        <div class="jc-machine">${macShort}</div>
+        <div class="jc-id">${r.id}</div>
+      </div>
+      <div class="jc-desc">${r.desc}</div>
+      <div class="jc-badges">${typB[r.type]} ${prioB[r.priority]} ${statB[r.status]}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span class="jc-meta">👤 ${r.reporter}</span>
+        <span class="jc-meta">🕐 ${dt}</span>
+      </div>
+      ${hasResult ? `<div class="jc-result">📝 มีผลการซ่อมแล้ว</div>` : ''}
+    </div>`;
+  }).join('')}</div>` : '';
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────
@@ -1103,16 +1188,6 @@ function toast(msg, err) {
 // ── Init ──────────────────────────────────────────────────────────────
 g('f-datetime').value = new Date().toISOString().slice(0,16);
 buildMachineDropdown();
-if (records.length === 0) {
-  records = [
-    { id:'MX-0001', datetime:'2025-03-10T08:30', reporter:'สมชาย ใจดี', dept:'สายการผลิต A', machine:'เครื่องปั้ม #3 (MC-003)', type:'repair', priority:'urgent', desc:'เครื่องมีเสียงดังผิดปกติและน้ำมันรั่ว หยุดสายการผลิตทันที', status:'progress', images:[] },
-    { id:'MX-0002', datetime:'2025-03-10T10:15', reporter:'มาลี สวัสดี', dept:'สายการผลิต B', machine:'เครื่อง CNC #1 (MC-101)', type:'adjust', priority:'normal', desc:'ชิ้นงานออกมาไม่ได้ขนาด ต้องปรับค่า offset', status:'open', images:[] },
-    { id:'MX-0003', datetime:'2025-03-09T14:00', reporter:'วิชัย ดีงาม', dept:'แผนกบรรจุ', machine:'สายพานลำเลียง #2', type:'pm', priority:'normal', desc:'PM รายเดือน ตรวจสอบสายพาน น้ำมัน และน็อตสกรู', status:'done', images:[] },
-    { id:'MX-0004', datetime:'2025-03-08T09:00', reporter:'สมหญิง รักดี', dept:'สายการผลิต C', machine:'MC-305 — เครื่องกด #5', type:'repair', priority:'high', desc:'กระบอกไฮดรอลิกไม่ทำงาน แรงดันต่ำ', status:'done', images:[],
-      result:{ technician:'วิชัย ช่างดี', duration:'2 ชั่วโมง', cause:'น้ำมันไฮดรอลิกรั่วที่ข้อต่อ ซีลยางเสื่อมสภาพ', action:'เปลี่ยนซีลยางใหม่ เติมน้ำมันไฮดรอลิก และทดสอบแรงดัน', parts:'ซีลยาง O-ring 4 ชิ้น, น้ำมันไฮดรอลิก 1 ลิตร', images:[], savedAt:'2025-03-08T11:30' } },
-  ];
-  save();
-}
 </script>
 </body>
 </html>
