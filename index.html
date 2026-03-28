@@ -818,6 +818,8 @@ function b64(file) {
 }
 
 // ── Slack ─────────────────────────────────────────────────────────────
+const DASHBOARD_URL = 'https://pemikathammajeraja-alt.github.io/maintenance';
+
 async function sendSlack(rec, url) {
   const tl = { repair:'🔴 แจ้งซ่อม', adjust:'🟡 ปรับตั้งเครื่อง', pm:'🔵 PM' }[rec.type];
   const pl = { urgent:'🚨 เร่งด่วนมาก', high:'⚡ สูง', normal:'🟢 ปกติ', low:'⬇️ ต่ำ' }[rec.priority];
@@ -830,6 +832,9 @@ async function sendSlack(rec, url) {
       { type:'mrkdwn', text: '*ผู้แจ้ง:*\n' + rec.reporter },
     ]},
     { type:'section', text:{ type:'mrkdwn', text: '*อาการ:*\n' + rec.desc }},
+    { type:'actions', elements:[
+      { type:'button', text:{ type:'plain_text', text:'📊 ดู Dashboard' }, url: DASHBOARD_URL, style:'primary' }
+    ]},
     { type:'context', elements:[{ type:'mrkdwn', text: rec.datetime.replace('T',' ') + '  |  รูปภาพ: ' + rec.images.length + ' รูป' }]}
   ]};
   try { await fetch(url, { method:'POST', body: JSON.stringify(body) }); } catch(e) {}
@@ -1041,6 +1046,9 @@ async function sendSlackResult(rec, url) {
       { type:'mrkdwn', text:'*อะไหล่:*\n' + (res.parts||'-') },
     ]},
     { type:'section', text:{ type:'mrkdwn', text:'*สาเหตุ:*\n' + (res.cause||'-') + '\n\n*วิธีแก้ไข:*\n' + (res.action||'-') }},
+    { type:'actions', elements:[
+      { type:'button', text:{ type:'plain_text', text:'📊 ดู Dashboard' }, url: DASHBOARD_URL, style:'primary' }
+    ]},
     { type:'context', elements:[{ type:'mrkdwn', text:'บันทึกเมื่อ ' + res.savedAt }]}
   ]};
   try { await fetch(url, { method:'POST', body: JSON.stringify(body) }); } catch(e) {}
