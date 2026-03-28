@@ -713,7 +713,7 @@ tr:hover td { background: var(--gray-pale); }
 let records = JSON.parse(localStorage.getItem('mx2_records') || '[]');
 let selType = '', selPrio = '', modalId = null, previewFiles = [];
 
-const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyJKsaE6geUprP4mcSFM8GEYbXPB2qtqG8Lnempq2-MCEu0hTzvASx3-OO9uE30bNXk9A/exec';
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbwmr8GdMKE3fBiWLTmUvcFbZyKq-nwNO6DSJG_9TAMBmwHu5tVbcAViICzcqu6Ks1TCjw/exec';
 
 function getSlackUrl() {
   return PROXY_URL;
@@ -783,8 +783,7 @@ async function submitForm() {
   if (su) { sendSlack(rec, su); document.getElementById('no-slack-warn').style.display = 'none'; }
   else document.getElementById('no-slack-warn').style.display = 'block';
 
-  const shu = localStorage.getItem('mx2_sheets');
-  if (shu) sendSheets(rec, shu);
+  sendSheets(rec, PROXY_URL);
 
   toast('✅ บันทึกสำเร็จ — ' + id);
   clearForm();
