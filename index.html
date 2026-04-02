@@ -842,43 +842,21 @@ function b64(file) {
 // ── Slack ─────────────────────────────────────────────────────────────
 const DASHBOARD_URL = 'https://pemikathammajeraja-alt.github.io/maintenance/?view=1';
 
-async function sendSlack(rec, url) {
-  // ส่งผ่าน GET request เพื่อหลีกเลี่ยงปัญหา CORS
+function sendToProxy(rec, url) {
+  // ใช้ Image tag — ไม่มีปัญหา CORS เลย
   try {
     const params = new URLSearchParams({
-      id: rec.id,
-      datetime: rec.datetime,
-      reporter: rec.reporter,
-      dept: rec.dept,
-      machine: rec.machine,
-      type: rec.type,
-      priority: rec.priority,
-      desc: rec.desc,
-      status: rec.status,
-      images: rec.images.length + ' รูป'
+      id: rec.id, datetime: rec.datetime, reporter: rec.reporter,
+      dept: rec.dept, machine: rec.machine, type: rec.type,
+      priority: rec.priority, desc: rec.desc, status: rec.status,
+      images: (rec.images ? rec.images.length : 0) + ' รูป'
     });
-    await fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+    new Image().src = url + '?' + params.toString();
   } catch(e) {}
 }
 
-function sendSheets(rec, url) {
-  // ส่งผ่าน GET request เพื่อหลีกเลี่ยงปัญหา CORS
-  try {
-    const params = new URLSearchParams({
-      id: rec.id,
-      datetime: rec.datetime,
-      reporter: rec.reporter,
-      dept: rec.dept,
-      machine: rec.machine,
-      type: rec.type,
-      priority: rec.priority,
-      desc: rec.desc,
-      status: rec.status,
-      images: rec.images.length + ' รูป'
-    });
-    fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
-  } catch(e) {}
-}
+async function sendSlack(rec, url) { sendToProxy(rec, url); }
+function sendSheets(rec, url) { sendToProxy(rec, url); }
 
 // ── Dashboard ─────────────────────────────────────────────────────────
 function renderStats() {
