@@ -760,6 +760,7 @@ let records = JSON.parse(localStorage.getItem('mx2_records') || '[]');
 let selType = '', selPrio = '', modalId = null, previewFiles = [];
 
 const PROXY_URL = 'https://script.google.com/macros/s/AKfycbwmr8GdMKE3fBiWLTmUvcFbZyKq-nwNO6DSJG_9TAMBmwHu5tVbcAViICzcqu6Ks1TCjw/exec';
+const SHEETS_API = PROXY_URL; // ใช้ URL เดียวกัน
 
 function getSlackUrl() {
   return PROXY_URL;
@@ -771,7 +772,7 @@ function showPage(id, tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (tab) tab.classList.add('active');
-  if (id === 'dash') { renderStats(); renderTable(); renderCharts(); }
+  if (id === 'dash') { loadDashboard(); }
   if (id === 'settings') loadSettings();
 }
 
@@ -825,11 +826,9 @@ async function submitForm() {
   records.push(rec);
   save();
 
-  const su = getSlackUrl();
-  if (su) { sendSlack(rec, su); document.getElementById('no-slack-warn').style.display = 'none'; }
-  else document.getElementById('no-slack-warn').style.display = 'block';
-
-  sendSheets(rec, PROXY_URL);
+  // ส่งข้อมูลไป Apps Script (Slack + Sheets พร้อมกัน)
+  sendToProxy(rec, PROXY_URL);
+  document.getElementById('no-slack-warn').style.display = 'none';
 
   toast('✅ บันทึกสำเร็จ — ' + id);
   clearForm();
@@ -860,12 +859,12 @@ function b64(file) {
 const DASHBOARD_URL = 'https://pemikathammajeraja-alt.github.io/maintenance/?view=1';
 
 function sendToProxy(rec, url) {
-  // ใช้ Image tag — ไม่มีปัญหา CORS เลย
   try {
     const params = new URLSearchParams({
+      action: 'save',
       id: rec.id, datetime: rec.datetime, reporter: rec.reporter,
       dept: rec.dept, machine: rec.machine, type: rec.type,
-      priority: rec.priority, desc: rec.desc, status: rec.status,
+      priority: rec.priority, desc: rec.desc, status: rec.status || 'open',
       images: (rec.images ? rec.images.length : 0) + ' รูป'
     });
     new Image().src = url + '?' + params.toString();
@@ -875,7 +874,57 @@ function sendToProxy(rec, url) {
 async function sendSlack(rec, url) { sendToProxy(rec, url); }
 function sendSheets(rec, url) { sendToProxy(rec, url); }
 
+// ── ดึงข้อมูลจาก Google Sheets ──────────────────────────────────────
+async function fetchFromSheets() {
+  try {
+    const url = SHEETS_API + '?action=getData&t=' + Date.now();
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.map((row, i) => ({
+      id: row['รหัส'] || ('MX-' + String(i+1).padStart(4,'0')),
+      datetime: row['วันที่/เวลา'] || '',
+      reporter: row['ผู้แจ้ง'] || '',
+      dept: row['แผนก'] || '',
+      machine: row['เครื่องจักร'] || '',
+      type: row['ประเภท'] || 'repair',
+      priority: row['ความเร่งด่วน'] || 'normal',
+      desc: row['อาการ'] || '',
+      status: row['สถานะ'] || 'open',
+      images: [],
+      imgUrl: row['ลิงก์รูป'] || '',
+      result: {
+        technician: row['ช่างที่ซ่อม'] || '',
+        cause: row['สาเหตุ'] || '',
+        action: row['วิธีแก้ไข'] || '',
+        parts: row['อะไหล่'] || '',
+        duration: row['เวลาที่ใช้'] || ''
+      }
+    }));
+  } catch(e) {
+    console.log('Sheets fetch error:', e);
+    return null;
+  }
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────
+async function loadDashboard() {
+  // แสดง loading
+  const board = document.getElementById('kanban-board');
+  if (board) board.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:14px;">⏳ กำลังโหลดข้อมูล...</div>';
+
+  // ดึงจาก Sheets
+  const sheetsData = await fetchFromSheets();
+  if (sheetsData && sheetsData.length > 0) {
+    // ใช้ข้อมูลจาก Sheets
+    records = sheetsData;
+    localStorage.setItem('mx2_records', JSON.stringify(records));
+  } else {
+    // ถ้าดึงไม่ได้ ใช้ localStorage แทน
+    records = JSON.parse(localStorage.getItem('mx2_records') || '[]');
+  }
+  loadDashboard();
+}
+
 function renderStats() {
   const total  = records.length;
   const open   = records.filter(r=>r.status==='open').length;
@@ -963,7 +1012,7 @@ function clearAllData() {
   if (!confirm('ลบข้อมูลทั้งหมดในอุปกรณ์นี้?\n(ไม่กระทบ Google Sheets)')) return;
   localStorage.removeItem('mx2_records');
   records = [];
-  renderStats(); renderTable(); renderCharts();
+  loadDashboard();
   const ps = g('pending-section'); if(ps) ps.innerHTML='';
   toast('🗑️ ล้างข้อมูลแล้ว');
 }
@@ -1333,7 +1382,7 @@ if (IS_VIEW_ONLY) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-dash').classList.add('active');
   document.querySelectorAll('.nav-tab')[1].classList.add('active');
-  renderStats(); renderTable(); renderCharts();
+  loadDashboard();
 })();
 </script>
 </body>
