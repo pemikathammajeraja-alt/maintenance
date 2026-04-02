@@ -843,39 +843,41 @@ function b64(file) {
 const DASHBOARD_URL = 'https://pemikathammajeraja-alt.github.io/maintenance/?view=1';
 
 async function sendSlack(rec, url) {
-  const tl = { repair:'🔴 แจ้งซ่อม', adjust:'🟡 ปรับตั้งเครื่อง', pm:'🔵 PM' }[rec.type];
-  const pl = { urgent:'🚨 เร่งด่วนมาก', high:'⚡ สูง', normal:'🟢 ปกติ', low:'⬇️ ต่ำ' }[rec.priority];
-  const body = { blocks: [
-    { type:'header', text:{ type:'plain_text', text: tl + ' — ' + rec.id }},
-    { type:'section', fields:[
-      { type:'mrkdwn', text: '*เครื่อง:*\n' + rec.machine },
-      { type:'mrkdwn', text: '*แผนก:*\n' + rec.dept },
-      { type:'mrkdwn', text: '*ความเร่งด่วน:*\n' + pl },
-      { type:'mrkdwn', text: '*ผู้แจ้ง:*\n' + rec.reporter },
-    ]},
-    { type:'section', text:{ type:'mrkdwn', text: '*อาการ:*\n' + rec.desc }},
-    { type:'actions', elements:[
-      { type:'button', text:{ type:'plain_text', text:'📊 ดู Dashboard' }, url: DASHBOARD_URL, style:'primary' }
-    ]},
-    { type:'context', elements:[{ type:'mrkdwn', text: rec.datetime.replace('T',' ') + '  |  รูปภาพ: ' + rec.images.length + ' รูป' }]}
-  ]};
-  // ส่งผ่าน Apps Script proxy (รองรับ CORS)
+  // ส่งผ่าน GET request เพื่อหลีกเลี่ยงปัญหา CORS
   try {
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ ...rec, slack_blocks: body, images: rec.images.length + ' รูป' })
+    const params = new URLSearchParams({
+      id: rec.id,
+      datetime: rec.datetime,
+      reporter: rec.reporter,
+      dept: rec.dept,
+      machine: rec.machine,
+      type: rec.type,
+      priority: rec.priority,
+      desc: rec.desc,
+      status: rec.status,
+      images: rec.images.length + ' รูป'
     });
+    await fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
   } catch(e) {}
 }
 
 function sendSheets(rec, url) {
-  const payload = { ...rec, images: rec.images.length + ' รูป' };
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(payload)
-  }).catch(() => {});
+  // ส่งผ่าน GET request เพื่อหลีกเลี่ยงปัญหา CORS
+  try {
+    const params = new URLSearchParams({
+      id: rec.id,
+      datetime: rec.datetime,
+      reporter: rec.reporter,
+      dept: rec.dept,
+      machine: rec.machine,
+      type: rec.type,
+      priority: rec.priority,
+      desc: rec.desc,
+      status: rec.status,
+      images: rec.images.length + ' รูป'
+    });
+    fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+  } catch(e) {}
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────
