@@ -859,15 +859,21 @@ async function sendSlack(rec, url) {
     ]},
     { type:'context', elements:[{ type:'mrkdwn', text: rec.datetime.replace('T',' ') + '  |  รูปภาพ: ' + rec.images.length + ' รูป' }]}
   ]};
-  try { await fetch(url, { method:'POST', body: JSON.stringify(body) }); } catch(e) {}
+  // ส่งผ่าน Apps Script proxy (รองรับ CORS)
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ ...rec, slack_blocks: body, images: rec.images.length + ' รูป' })
+    });
+  } catch(e) {}
 }
 
 function sendSheets(rec, url) {
   const payload = { ...rec, images: rec.images.length + ' รูป' };
   fetch(url, {
     method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(payload)
   }).catch(() => {});
 }
